@@ -37,6 +37,11 @@ on:
         required: false
         default: ""
         type: string
+      download-artifact-directory:
+        description: "Optional parent directory of the download-artifact"
+        required: false
+        default: "./"
+        type: string
       upload-sarif:
         description: "Whether to upload to Security > Code Scanning"
         type: boolean
@@ -62,7 +67,7 @@ jobs:
         if: "${{ inputs.download-artifact != '' }}"
         with:
           name: "${{ inputs.download-artifact }}"
-          path: "./"
+          path: "${{ inputs.download-artifact-directory }}"
       - name: "Run scanner"
         uses: google/osv-scanner/actions/scanner@main
         with:
