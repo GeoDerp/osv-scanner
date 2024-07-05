@@ -75,7 +75,7 @@ jobs:
         uses: google/osv-scanner/actions/scanner@main
         with:
           scan-args: |-
-            --output=results-${{ github.run_id }}-${{ github.run_attempt }}.json
+            --output=results-${{ strategy.job-index }}.json
             --format=json
             ${{ inputs.scan-args }}
         continue-on-error: true
