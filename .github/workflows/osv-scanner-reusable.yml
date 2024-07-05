@@ -84,7 +84,7 @@ jobs:
         with:
           scan-args: |-
             --output=${{ inputs.results-file-name }}
-            --new=results-${{ github.run_id }}-${{ github.run_attempt }}.json
+            --new=results-${{ strategy.job-index }}.json
             --gh-annotations=false
             --fail-on-vuln=${{ inputs.fail-on-vuln }}
       # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
