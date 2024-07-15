@@ -7,7 +7,6 @@ import (
 	"sort"
 	"testing"
 
-	"deps.dev/util/maven"
 	"deps.dev/util/resolve"
 	"deps.dev/util/resolve/dep"
 	"github.com/google/osv-scanner/internal/resolution/manifest"
@@ -85,6 +84,9 @@ func TestSuggest(t *testing.T) {
 		t.Fatalf("failed to get Maven suggester: %v", err)
 	}
 
+	depProfileTwoMgmt.AddAttr(dep.MavenArtifactType, "pom")
+	depProfileTwoMgmt.AddAttr(dep.Scope, "import")
+
 	mf := manifest.Manifest{
 		FilePath: filepath.Join("fixtures", "pom.xml"),
 		Root: resolve.Version{
@@ -99,17 +101,6 @@ func TestSuggest(t *testing.T) {
 		},
 		Requirements: []resolve.RequirementVersion{
 			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.Maven,
-						Name:   "com.mycompany.app:parent-pom",
-					},
-					VersionType: resolve.Requirement,
-					Version:     "1.0.0",
-				},
-				Type: depParent,
-			},
-			{
 				// Test dependencies are not updated.
 				VersionKey: resolve.VersionKey{
 					PackageKey: resolve.PackageKey{
@@ -119,7 +110,7 @@ func TestSuggest(t *testing.T) {
 					VersionType: resolve.Requirement,
 					Version:     "4.12",
 				},
-				// Type: dep.NewType(dep.Test), test scope is ignored to make resolution work.
+				Type: dep.NewType(dep.Test),
 			},
 			{
 				VersionKey: resolve.VersionKey{
@@ -198,109 +189,68 @@ func TestSuggest(t *testing.T) {
 				},
 				Type: depMgmt,
 			},
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.Maven,
-						Name:   "org.profile:abc",
-					},
-					VersionType: resolve.Requirement,
-					Version:     "1.2.3",
-				},
-				Type: depProfileOne,
-			},
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.Maven,
-						Name:   "org.profile:def",
-					},
-					VersionType: resolve.Requirement,
-					Version:     "2.3.4",
-				},
-				Type: depProfileOne,
-			},
-			{
-				// A package is specified to ignore major updates.
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.Maven,
-						Name:   "org.import:xyz",
-					},
-					VersionType: resolve.Requirement,
-					Version:     "6.6.6",
-				},
-				Type: depProfileTwoMgmt,
-			},
-			{
-				VersionKey: resolve.VersionKey{
-					PackageKey: resolve.PackageKey{
-						System: resolve.Maven,
-						Name:   "org.dep:plugin-dep",
-					},
-					VersionType: resolve.Requirement,
-					Version:     "2.3.3",
-				},
-				Type: depPlugin,
-			},
 		},
 		Groups: map[manifest.RequirementKey][]string{
 			mavenReqKey(t, "junit:junit", "", ""):    {"test"},
 			mavenReqKey(t, "org.import:xyz", "", ""): {"import"},
 		},
 		EcosystemSpecific: manifest.MavenManifestSpecific{
-			Properties: []manifest.PropertyWithOrigin{
-				{Property: maven.Property{Name: "project.build.sourceEncoding", Value: "UTF-8"}},
-				{Property: maven.Property{Name: "maven.compiler.source", Value: "1.7"}},
-				{Property: maven.Property{Name: "maven.compiler.target", Value: "1.7"}},
-				{Property: maven.Property{Name: "property.version", Value: "1.0.0"}},
-				{Property: maven.Property{Name: "no.update.minor", Value: "9"}},
-			},
-			RequirementsWithProperties: []resolve.RequirementVersion{
+			RequirementsForUpdates: []resolve.RequirementVersion{
 				{
-					// The universal property should be updated.
 					VersionKey: resolve.VersionKey{
 						PackageKey: resolve.PackageKey{
 							System: resolve.Maven,
-							Name:   "org.example:property",
+							Name:   "com.mycompany.app:parent-pom",
 						},
 						VersionType: resolve.Requirement,
-						Version:     "${property.version}",
+						Version:     "1.0.0",
 					},
+					Type: depParent,
 				},
 				{
-					// Property cannot be updated, so update the dependency directly.
 					VersionKey: resolve.VersionKey{
 						PackageKey: resolve.PackageKey{
 							System: resolve.Maven,
-							Name:   "org.example:property-no-update",
+							Name:   "org.profile:abc",
 						},
 						VersionType: resolve.Requirement,
-						Version:     "1.${no.update.minor}",
+						Version:     "1.2.3",
 					},
+					Type: depProfileOne,
 				},
 				{
-					// The propety is updated to the same value.
 					VersionKey: resolve.VersionKey{
 						PackageKey: resolve.PackageKey{
 							System: resolve.Maven,
-							Name:   "org.example:same-property",
+							Name:   "org.profile:def",
 						},
 						VersionType: resolve.Requirement,
-						Version:     "${property.version}",
+						Version:     "2.3.4",
 					},
+					Type: depProfileOne,
 				},
 				{
-					// Property needs to be updated to a different value,
-					// so update dependency directly.
+					// A package is specified to ignore major updates.
 					VersionKey: resolve.VersionKey{
 						PackageKey: resolve.PackageKey{
 							System: resolve.Maven,
-							Name:   "org.example:another-property",
+							Name:   "org.import:xyz",
 						},
 						VersionType: resolve.Requirement,
-						Version:     "${property.version}",
+						Version:     "6.6.6",
 					},
+					Type: depProfileTwoMgmt,
+				},
+				{
+					VersionKey: resolve.VersionKey{
+						PackageKey: resolve.PackageKey{
+							System: resolve.Maven,
+							Name:   "org.dep:plugin-dep",
+						},
+						VersionType: resolve.Requirement,
+						Version:     "2.3.3",
+					},
+					Type: depPlugin,
 				},
 			},
 		},
@@ -342,9 +292,23 @@ func TestSuggest(t *testing.T) {
 			{
 				Pkg: resolve.PackageKey{
 					System: resolve.Maven,
+					Name:   "org.example:property",
+				},
+				NewRequire: "1.0.1",
+			},
+			{
+				Pkg: resolve.PackageKey{
+					System: resolve.Maven,
 					Name:   "org.example:property-no-update",
 				},
 				NewRequire: "2.0.0",
+			},
+			{
+				Pkg: resolve.PackageKey{
+					System: resolve.Maven,
+					Name:   "org.example:same-property",
+				},
+				NewRequire: "1.0.1",
 			},
 			{
 				Pkg: resolve.PackageKey{
@@ -379,9 +343,64 @@ func TestSuggest(t *testing.T) {
 				NewRequire: "2.3.5",
 			},
 		},
-		EcosystemSpecific: manifest.MavenPropertyPatches{
-			"": {
-				"property.version": "1.0.1",
+		EcosystemSpecific: manifest.MavenManifestSpecific{
+			// Copied from Manifest.EcosystemSpecific
+			RequirementsForUpdates: []resolve.RequirementVersion{
+				{
+					VersionKey: resolve.VersionKey{
+						PackageKey: resolve.PackageKey{
+							System: resolve.Maven,
+							Name:   "com.mycompany.app:parent-pom",
+						},
+						VersionType: resolve.Requirement,
+						Version:     "1.0.0",
+					},
+					Type: depParent,
+				},
+				{
+					VersionKey: resolve.VersionKey{
+						PackageKey: resolve.PackageKey{
+							System: resolve.Maven,
+							Name:   "org.profile:abc",
+						},
+						VersionType: resolve.Requirement,
+						Version:     "1.2.3",
+					},
+					Type: depProfileOne,
+				},
+				{
+					VersionKey: resolve.VersionKey{
+						PackageKey: resolve.PackageKey{
+							System: resolve.Maven,
+							Name:   "org.profile:def",
+						},
+						VersionType: resolve.Requirement,
+						Version:     "2.3.4",
+					},
+					Type: depProfileOne,
+				},
+				{
+					VersionKey: resolve.VersionKey{
+						PackageKey: resolve.PackageKey{
+							System: resolve.Maven,
+							Name:   "org.import:xyz",
+						},
+						VersionType: resolve.Requirement,
+						Version:     "6.6.6",
+					},
+					Type: depProfileTwoMgmt,
+				},
+				{
+					VersionKey: resolve.VersionKey{
+						PackageKey: resolve.PackageKey{
+							System: resolve.Maven,
+							Name:   "org.dep:plugin-dep",
+						},
+						VersionType: resolve.Requirement,
+						Version:     "2.3.3",
+					},
+					Type: depPlugin,
+				},
 			},
 		},
 	}
@@ -448,30 +467,6 @@ func TestSuggestVersion(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("suggestMavenVersion(%v, %t): got %s want %s", vk, test.noMajorUpdates, got, want)
-		}
-	}
-}
-
-func TestGeneratePropertyPatches(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		s1       string
-		s2       string
-		possible bool
-		patches  map[string]string
-	}{
-		{"${version}", "1.2.3", true, map[string]string{"version": "1.2.3"}},
-		{"${major}.2.3", "1.2.3", true, map[string]string{"major": "1"}},
-		{"1.${minor}.3", "1.2.3", true, map[string]string{"minor": "2"}},
-		{"1.2.${patch}", "1.2.3", true, map[string]string{"patch": "3"}},
-		{"${major}.${minor}.${patch}", "1.2.3", true, map[string]string{"major": "1", "minor": "2", "patch": "3"}},
-		{"${major}.2.3", "2.0.0", false, map[string]string{}},
-		{"1.${minor}.3", "2.0.0", false, map[string]string{}},
-	}
-	for _, test := range tests {
-		patches, ok := generatePropertyPatches(test.s1, test.s2)
-		if ok != test.possible || !reflect.DeepEqual(patches, test.patches) {
-			t.Errorf("generatePropertyPatches(%s, %s): got %v %v, want %v %v", test.s1, test.s2, patches, ok, test.patches, test.possible)
 		}
 	}
 }
