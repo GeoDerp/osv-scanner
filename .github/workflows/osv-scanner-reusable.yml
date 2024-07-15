@@ -34,7 +34,7 @@ on:
       results-file-name:
         description: "File name of the result SARIF file"
         type: string
-        default: results
+        default: results.sarif
       download-artifact:
         description: "Optional artifact to download for scanning"
         required: false
@@ -75,7 +75,7 @@ jobs:
         uses: google/osv-scanner/actions/scanner@main
         with:
           scan-args: |-
-            --output=results-${{ inputs.results-file-name }}.json
+            --output=results.json
             --format=json
             ${{ inputs.scan-args }}
         continue-on-error: true
@@ -83,8 +83,8 @@ jobs:
         uses: google/osv-scanner/actions/reporter@main
         with:
           scan-args: |-
-            --output=${{ inputs.results-file-name }}.sarif
-            --new=results-${{ inputs.results-file-name }}.json
+            --output=${{ inputs.results-file-name }}
+            --new=results.json
             --gh-annotations=false
             --fail-on-vuln=${{ inputs.fail-on-vuln }}
       # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
@@ -93,12 +93,12 @@ jobs:
         if: "!cancelled()"
         uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
         with:
-          name: SARIF file
-          path: ${{ inputs.results-file-name }}.sarif
+          name: ${{ inputs.results-file-name }} SARIF file
+          path: ${{ inputs.results-file-name }}
           retention-days: 5
       # Upload the results to GitHub's code scanning dashboard.
       - name: "Upload to code-scanning"
         if: "${{ !cancelled() && inputs.upload-sarif == true }}"
         uses: github/codeql-action/upload-sarif@b611370bb5703a7efb587f9d136a52ea24c5c38c # v3.25.11
         with:
-          sarif_file: ${{ inputs.results-file-name }}.sarif
+          sarif_file: ${{ inputs.results-file-name }}
