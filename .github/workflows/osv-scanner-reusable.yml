@@ -72,6 +72,8 @@ jobs:
         with:
           name: "${{ inputs.download-artifact }}"
           path: "${{ inputs.download-artifact-directory }}"
+      - name: Display downloaded files
+        run: ls -R ./
       - name: "Run scanner"
         uses: google/osv-scanner/actions/scanner@main
         with:
