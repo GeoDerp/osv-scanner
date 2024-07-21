@@ -74,7 +74,7 @@ jobs:
           path: "${{ inputs.download-artifact-directory }}"
       - name: Display downloaded files
         if: "${{ inputs.download-artifact != '' }}"
-        run: find ./ -name "*.status"
+        run: find ${PWD} -name "*.status"
       - name: "Run scanner"
         uses: google/osv-scanner/actions/scanner@main
         with:
