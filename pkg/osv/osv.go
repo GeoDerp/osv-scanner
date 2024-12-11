@@ -19,7 +19,7 @@ import (
 const (
 	// QueryEndpoint is the URL for posting queries to OSV.
 	QueryEndpoint = "https://api.osv.dev/v1/querybatch"
-	// GetEndpoint is the URL for getting vulenrabilities from OSV.
+	// GetEndpoint is the URL for getting vulnerabilities from OSV.
 	GetEndpoint = "https://api.osv.dev/v1/vulns"
 	// DetermineVersionEndpoint is the URL for posting determineversion queries to OSV.
 	DetermineVersionEndpoint = "https://api.osv.dev/v1experimental/determineversion"
@@ -28,7 +28,7 @@ const (
 	// maxQueriesPerRequest splits up querybatch into multiple requests if
 	// number of queries exceed this number
 	maxQueriesPerRequest  = 1000
-	maxConcurrentRequests = 25
+	maxConcurrentRequests = 1000
 	maxRetryAttempts      = 4
 	// jitterMultiplier is multiplied to the retry delay multiplied by rand(0, 1.0)
 	jitterMultiplier = 2
@@ -282,7 +282,6 @@ func HydrateWithClient(resp *BatchedResponse, client *http.Client) (*HydratedBat
 		for resultIdx, vuln := range response.Vulns {
 			id := vuln.ID
 			batchIdx := batchIdx
-			resultIdx := resultIdx
 			g.Go(func() error {
 				// exit early if another hydration request has already failed
 				// results are thrown away later, so avoid needless work
@@ -312,7 +311,7 @@ func makeRetryRequest(action func() (*http.Response, error)) (*http.Response, er
 	var resp *http.Response
 	var err error
 
-	for i := 0; i < maxRetryAttempts; i++ {
+	for i := range maxRetryAttempts {
 		// rand is initialized with a random number (since go1.20), and is also safe to use concurrently
 		// we do not need to use a cryptographically secure random jitter, this is just to spread out the retry requests
 		// #nosec G404

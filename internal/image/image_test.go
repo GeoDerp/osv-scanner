@@ -3,7 +3,6 @@ package image_test
 import (
 	"errors"
 	"os"
-	"sort"
 	"testing"
 
 	"github.com/google/osv-scanner/internal/image"
@@ -66,9 +65,14 @@ func TestScanImage(t *testing.T) {
 			want:    testutility.NewSnapshot(),
 			wantErr: false,
 		},
+		{
+			name:    "scanning go binaries that's been overwritten for package tracing",
+			args:    args{imagePath: "fixtures/test-package-tracing.tar"},
+			want:    testutility.NewSnapshot(),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -83,9 +87,11 @@ func TestScanImage(t *testing.T) {
 				return
 			}
 
-			sort.Slice(got.Lockfiles, func(i, j int) bool {
-				return got.Lockfiles[i].FilePath < got.Lockfiles[j].FilePath
-			})
+			for _, lockfile := range got.Lockfiles {
+				for _, pkg := range lockfile.Packages {
+					pkg.ImageOrigin.LayerID = "<Any value>"
+				}
+			}
 
 			tt.want.MatchJSON(t, got)
 		})

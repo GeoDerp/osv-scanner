@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.22.5-alpine3.19@sha256:0642d4f809abf039440540de1f0e83502401686e3946ed8e7398a1d94648aa6d
+FROM golang:1.23.3-alpine3.19@sha256:f72297ec1cf35152ecfe7a4d692825fc608fea8f3d3fa8f986fda70184082823
 
 RUN mkdir /src
 WORKDIR /src
@@ -25,7 +25,7 @@ COPY ./ /src/
 RUN go build -o osv-scanner ./cmd/osv-scanner/
 RUN go build -o osv-reporter ./cmd/osv-reporter/
 
-FROM alpine:3.20@sha256:b89d9c93e9ed3597455c90a0b88a8bbb5cb7188438f70953fede212a0c4394e0
+FROM alpine:3.20@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
 RUN apk --no-cache add \
   ca-certificates \
   git \

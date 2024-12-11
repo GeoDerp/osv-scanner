@@ -265,7 +265,7 @@ func TestSuggest(t *testing.T) {
 		t.Fatalf("failed to suggest ManifestPatch: %v", err)
 	}
 
-	want := manifest.ManifestPatch{
+	want := manifest.Patch{
 		Deps: []manifest.DependencyPatch{
 			{
 				Pkg: resolve.PackageKey{
@@ -353,66 +353,7 @@ func TestSuggest(t *testing.T) {
 				NewRequire:  "2.3.5",
 			},
 		},
-		EcosystemSpecific: manifest.MavenManifestSpecific{
-			// Copied from Manifest.EcosystemSpecific
-			RequirementsForUpdates: []resolve.RequirementVersion{
-				{
-					VersionKey: resolve.VersionKey{
-						PackageKey: resolve.PackageKey{
-							System: resolve.Maven,
-							Name:   "com.mycompany.app:parent-pom",
-						},
-						VersionType: resolve.Requirement,
-						Version:     "1.0.0",
-					},
-					Type: depParent,
-				},
-				{
-					VersionKey: resolve.VersionKey{
-						PackageKey: resolve.PackageKey{
-							System: resolve.Maven,
-							Name:   "org.profile:abc",
-						},
-						VersionType: resolve.Requirement,
-						Version:     "1.2.3",
-					},
-					Type: depProfileOne,
-				},
-				{
-					VersionKey: resolve.VersionKey{
-						PackageKey: resolve.PackageKey{
-							System: resolve.Maven,
-							Name:   "org.profile:def",
-						},
-						VersionType: resolve.Requirement,
-						Version:     "2.3.4",
-					},
-					Type: depProfileOne,
-				},
-				{
-					VersionKey: resolve.VersionKey{
-						PackageKey: resolve.PackageKey{
-							System: resolve.Maven,
-							Name:   "org.import:xyz",
-						},
-						VersionType: resolve.Requirement,
-						Version:     "6.6.6",
-					},
-					Type: depProfileTwoMgmt,
-				},
-				{
-					VersionKey: resolve.VersionKey{
-						PackageKey: resolve.PackageKey{
-							System: resolve.Maven,
-							Name:   "org.dep:plugin-dep",
-						},
-						VersionType: resolve.Requirement,
-						Version:     "2.3.3",
-					},
-					Type: depPlugin,
-				},
-			},
-		},
+		Manifest: &mf,
 	}
 	sort.Slice(got.Deps, func(i, j int) bool {
 		return got.Deps[i].Pkg.Name < got.Deps[j].Pkg.Name
@@ -458,25 +399,25 @@ func TestSuggestVersion(t *testing.T) {
 		{"[1.0.0,2.0.0)", false, "2.3.4"},
 		{"[1.0.0,2.0.0)", true, "[1.0.0,2.0.0)"},
 	}
-	for _, test := range tests {
+	for _, tt := range tests {
 		vk := resolve.VersionKey{
 			PackageKey:  pk,
 			VersionType: resolve.Requirement,
-			Version:     test.requirement,
+			Version:     tt.requirement,
 		}
 		want := resolve.RequirementVersion{
 			VersionKey: resolve.VersionKey{
 				PackageKey:  pk,
 				VersionType: resolve.Requirement,
-				Version:     test.want,
+				Version:     tt.want,
 			},
 		}
-		got, err := suggestMavenVersion(ctx, lc, resolve.RequirementVersion{VersionKey: vk}, test.noMajorUpdates)
+		got, err := suggestMavenVersion(ctx, lc, resolve.RequirementVersion{VersionKey: vk}, tt.noMajorUpdates)
 		if err != nil {
 			t.Fatalf("fail to suggest a new version for %v: %v", vk, err)
 		}
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("suggestMavenVersion(%v, %t): got %s want %s", vk, test.noMajorUpdates, got, want)
+			t.Errorf("suggestMavenVersion(%v, %t): got %s want %s", vk, tt.noMajorUpdates, got, want)
 		}
 	}
 }
